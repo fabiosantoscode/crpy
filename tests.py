@@ -6,21 +6,18 @@ import threading
 
 crp = crowdprocess.CrowdProcess(
     username="jj@crowdprocess.com", password="blablabla")
-N = 4000
+N = 10
 tasksSent = []
 
 
 class Tests(unittest.TestCase):
 
-    def est_low_level(self):
+    def test_low_level(self):
         job = crp.Job()
         job.create("function Run(d) { return d*2; }")
         self.assertIsNotNone(job.id)
 
-        def tasks():
-            for x in range(0, N):
-                tasksSent.append(x)
-                yield x
+        tasks = range(N)
 
         job.create_tasks(tasks)
 
@@ -28,7 +25,7 @@ class Tests(unittest.TestCase):
 
         results_got = 0
         for result in job.get_results():
-            self.assertTrue(result / 2 in tasksSent)
+            self.assertTrue(result / 2 in tasks)
             results_got += 1
 
         self.assertEqual(results_got, N)
@@ -41,7 +38,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(s["failed"], 0)
         self.assertEqual(s["id"], job.id)
 
-    def est_streams(self):
+    def test_streams(self):
         job = crp.Job()
         job.create("function Run(d) { return d; }")
 
@@ -59,17 +56,19 @@ class Tests(unittest.TestCase):
             for x in range(N):
                 yield x
 
-        job.create_tasks(tasks)
+        job.create_tasks(tasks())
 
         t.join()
 
     def test_io(self):
         job = crp.Job()
-        job.create("function Run(d) { return d; }")
+        job.create("function Run(d) { return d*2; }")
 
-        io = job.io(range(N))
+        tasks = range(N)
+
+        io = job.io(tasks)
         for result in io:
-            print(result)
+            self.assertIn(result/2, tasks)
 
 if __name__ == '__main__':
     unittest.main()

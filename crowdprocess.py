@@ -44,7 +44,9 @@ class Job(object):
         super(Job, self).__init__()
         self.headers = CrowdProcess.headers
         self.id = id
-        self.counters = {}
+        self.tasks_out = {}
+        if id is not None:
+            self.tasks_out[self.id] = 0
 
     def show(self):
         if self.id is None or self.id is "":
@@ -75,6 +77,7 @@ class Job(object):
             res.raise_for_status()
 
         self.id = res.json()["id"]
+        self.tasks_out[self.id] = 0
 
     def delete(self):
         if self.id is None:
@@ -105,9 +108,12 @@ class Job(object):
             res.raise_for_status()
 
         def gen(iter):
-            for line in res.iter_lines():
-                if line:
-                    yield json.loads(line.decode())
+            while True:
+                line = res.raw.readline()
+                if len(line) is 0:
+                    break
+                yield json.loads(line.decode())
+                
 
         return gen(res)
 
@@ -121,9 +127,9 @@ class Job(object):
         def gen(iter):
             while True:
                 line = res.raw.readline()
-                yield json.loads(line.decode())
-                if line is None:
+                if len(line) is 0:
                     break
+                yield json.loads(line.decode())
 
         return gen(res)
 
@@ -135,9 +141,11 @@ class Job(object):
             res.raise_for_status()
 
         def gen(iter):
-            for line in res.iter_lines():
-                if line:
-                    yield json.loads(line.decode())
+            while True:
+                line = res.raw.readline()
+                if len(line) is 0:
+                    break
+                yield json.loads(line.decode())
 
         return gen(res)
 
@@ -149,26 +157,28 @@ class Job(object):
             res.raise_for_status()
 
         def gen(iter):
-            for line in res.iter_lines():
-                if line:
-                    yield json.loads(line.decode())
+            while True:
+                line = res.raw.readline()
+                if len(line) is 0:
+                    break
+                yield json.loads(line.decode())
 
         return gen(res)
 
     def io(self, iterable):
-        self.counters[self.id] = 0
         def genwrapper():
             for n in iterable:
                 yield n
-                self[self.id] += 1
+                self.tasks_out[self.id] += 1
 
-        t = threading.Thread(target=self.create_tasks, args=(genwrapper()))
+        t = threading.Thread(target=lambda: self.create_tasks(genwrapper()))
         t.start()
 
         def results_gen():
             for result in self.get_results_stream():
-                self.counters[self.id] = self.counters[self.id] - 1
-                if self.counters[self.id] is 0:
+                yield result
+                self.tasks_out[self.id] = self.tasks_out[self.id] - 1
+                if self.tasks_out[self.id] is 0:
                     break
 
         return results_gen()
