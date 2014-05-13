@@ -44,6 +44,7 @@ class Job(object):
         super(Job, self).__init__()
         self.headers = CrowdProcess.headers
         self.id = id
+        self.counters = {}
 
     def show(self):
         if self.id is None or self.id is "":
@@ -155,19 +156,19 @@ class Job(object):
         return gen(res)
 
     def io(self, iterable):
-        expected_results = 0
+        self.counters[self.id] = 0
         def genwrapper():
             for n in iterable:
                 yield n
-                expected_results += 1
+                self[self.id] += 1
 
         t = threading.Thread(target=self.create_tasks, args=(genwrapper()))
         t.start()
 
         def results_gen():
             for result in self.get_results_stream():
-                expected_results = expected_results - 1
-                if expected_results is 0:
+                self.counters[self.id] = self.counters[self.id] - 1
+                if self.counters[self.id] is 0:
                     break
 
         return results_gen()

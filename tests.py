@@ -69,7 +69,7 @@ class Tests(unittest.TestCase):
 
         io = job.io(range(N))
         for result in io:
-            print("result")
+            print(result)
 
 if __name__ == '__main__':
     unittest.main()
