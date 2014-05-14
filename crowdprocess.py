@@ -44,9 +44,7 @@ class Job(object):
         super(Job, self).__init__()
         self.headers = CrowdProcess.headers
         self.id = id
-        self.tasks_out = {}
-        if id is not None:
-            self.tasks_out[self.id] = 0
+        self.tasks_out = 0
 
     def show(self):
         if self.id is None or self.id is "":
@@ -77,7 +75,6 @@ class Job(object):
             res.raise_for_status()
 
         self.id = res.json()["id"]
-        self.tasks_out[self.id] = 0
 
     def delete(self):
         if self.id is None:
@@ -169,7 +166,7 @@ class Job(object):
         def genwrapper():
             for n in iterable:
                 yield n
-                self.tasks_out[self.id] += 1
+                self.tasks_out += 1
 
         t = threading.Thread(target=lambda: self.create_tasks(genwrapper()))
         t.start()
@@ -177,8 +174,8 @@ class Job(object):
         def results_gen():
             for result in self.get_results_stream():
                 yield result
-                self.tasks_out[self.id] = self.tasks_out[self.id] - 1
-                if self.tasks_out[self.id] is 0:
+                self.tasks_out = self.tasks_out - 1
+                if self.tasks_out is 0:
                     break
 
         return results_gen()
