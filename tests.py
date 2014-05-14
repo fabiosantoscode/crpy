@@ -6,7 +6,7 @@ import threading
 
 crp = crowdprocess.CrowdProcess(
     username="jj@crowdprocess.com", password="blablabla")
-N = 10
+N = 1000
 tasksSent = []
 
 
@@ -21,7 +21,11 @@ class Tests(unittest.TestCase):
 
         job.create_tasks(tasks)
 
-        sleep(2)
+        while True:
+            s = job.show()
+            if s["total"] > 0 and s["total"] == s["finished"] + s["failed"]:
+                break
+            sleep(1)
 
         results_got = 0
         for result in job.get_results():
