@@ -34,7 +34,6 @@ class Tests(unittest.TestCase):
 
         self.assertEqual(results_got, N)
 
-        # reference by id
         job = crp.Job(id=job.id)
         s = job.show()
         self.assertEqual(s["total"], N)
@@ -73,6 +72,19 @@ class Tests(unittest.TestCase):
         io = job.io(tasks)
         for result in io:
             self.assertIn(result/2, tasks)
+
+    def test_pipe(self):
+        multiply = crp.Job()
+        multiply.create("function Run(d) { return d*2; }")
+
+        divide = crp.Job()
+        divide.create("function Run(d) { return d/2; }")
+
+        tasks = range(N)
+        multiplied = multiply.io(tasks)
+        divided = divide.io(multiplied)
+        for result in divided:
+            self.assertIn(result, tasks)
 
 if __name__ == '__main__':
     unittest.main()
