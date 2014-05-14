@@ -32,35 +32,25 @@ class CrowdProcess(object):
         else:
             res.raise_for_status()
 
-    def Job(self, id=None):
-        return Job(self, id)
+    def Job(self, program=None, bid=1.0, group=None, id=None):
+        return Job(self, program=program, bid=bid, group=group, id=id)
 
 
 class Job(object):
 
     """docstring for Job"""
 
-    def __init__(self, CrowdProcess, id=None):
+    def __init__(self, CrowdProcess, program=None, bid=1.0, group=None, id=None):
         super(Job, self).__init__()
         self.headers = CrowdProcess.headers
-        self.id = id
         self.tasks_out = 0
 
-    def show(self):
-        if self.id is None or self.id is "":
-            raise Exception("Need a self.id")
+        if id is not None:
+            self.id = id
+        elif program is not None:
+            self._create(program, bid, group)
 
-        res = requests.get(baseAPIUrl + self.id,
-                           headers=self.headers)
-        if res.status_code != requests.codes.ok:
-            res.raise_for_status()
-
-        return res.json()
-
-    def create(self, program, bid=1.0, group=None):
-        if self.id is not None:
-            raise Exception("Job " + self.id + " was already created")
-
+    def _create(self, program, bid=1.0, group=None):
         payload = {
             "program": program,
             "bid": bid,
@@ -76,12 +66,19 @@ class Job(object):
 
         self.id = res.json()["id"]
 
-    def delete(self):
-        if self.id is None:
-            raise Exception("This job was not created (self.id not present)")
+    def show(self):
+        res = requests.get(baseAPIUrl + self.id,
+                           headers=self.headers)
 
+        if res.status_code != requests.codes.ok:
+            res.raise_for_status()
+
+        return res.json()
+
+    def delete(self):
         res = requests.delete(baseAPIUrl + "/" + self.id,
                               headers=self.headers)
+
         if res.status_code != requests.codes.no_content:
             res.raise_for_status()
 
@@ -101,6 +98,7 @@ class Job(object):
         res = requests.get(baseAPIUrl + self.id + "/results",
                            stream=True,
                            headers=self.headers)
+
         if res.status_code != requests.codes.ok:
             res.raise_for_status()
 
@@ -118,6 +116,7 @@ class Job(object):
         res = requests.get(baseAPIUrl + self.id + "/results?stream",
                            stream=True,
                            headers=self.headers)
+
         if res.status_code != requests.codes.ok:
             res.raise_for_status()
 
@@ -134,6 +133,7 @@ class Job(object):
         res = requests.get(baseAPIUrl + self.id + "/errors",
                            stream=True,
                            headers=self.headers)
+
         if res.status_code != requests.codes.ok:
             res.raise_for_status()
 
@@ -150,6 +150,7 @@ class Job(object):
         res = requests.get(baseAPIUrl + self.id + "/errors?stream",
                            stream=True,
                            headers=self.headers)
+
         if res.status_code != requests.codes.ok:
             res.raise_for_status()
 
@@ -162,17 +163,19 @@ class Job(object):
 
         return gen(res)
 
-    def io(self, iterable):
+    def __call__(self, iterable):
         def genwrapper():
             for n in iterable:
                 yield n
                 self.tasks_out += 1
 
-        t = threading.Thread(target=lambda: self.create_tasks(genwrapper()))
+        t = threading.Thread(target=self.create_tasks, args=(genwrapper(),))
+
+        results = self.get_results_stream()
         t.start()
 
         def results_gen():
-            for result in self.get_results_stream():
+            for result in results:
                 yield result
                 self.tasks_out = self.tasks_out - 1
                 if self.tasks_out is 0:

@@ -2,23 +2,53 @@ import crowdprocess
 import unittest
 from time import sleep
 import threading
-# get https://github.com/dropbox/responses later
+import json
+import httpretty
 
 crp = crowdprocess.CrowdProcess(
     username="jj@crowdprocess.com", password="blablabla")
-N = 1000
+N = 10
+program_fixture = "function Run(d) { return d*2; }"
+results_fixture = "\n".join([str(x*2) for x in range(N)])+"\n"
 tasksSent = []
-
+baseAPIUrl = "https://api.crowdprocess.com/jobs/"
 
 class Tests(unittest.TestCase):
 
+    def setUp(self):
+        httpretty.register_uri(httpretty.POST, baseAPIUrl,
+                      body=json.dumps({
+                        "id": "job_id"
+                      }),
+                      status=201,
+                      content_type='application/json')
+
+        httpretty.register_uri(httpretty.POST, baseAPIUrl+"job_id/tasks",
+                      status=201,
+                      content_type='application/json')
+
+        httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id",
+                      status=200,
+                      body=json.dumps({
+                          "id": "job_id",
+                          "total": 10,
+                          "finished": 10,
+                          "failed": 0
+                      }),
+                      content_type='application/json')
+
+        httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
+                      status=200,
+                      body=results_fixture,
+                      stream=True,
+                      content_type='application/json')
+
+    @httpretty.activate
     def test_low_level(self):
-        job = crp.Job()
-        job.create("function Run(d) { return d*2; }")
+        job = crp.Job(program_fixture)
         self.assertIsNotNone(job.id)
 
         tasks = range(N)
-
         job.create_tasks(tasks)
 
         while True:
@@ -41,9 +71,11 @@ class Tests(unittest.TestCase):
         self.assertEqual(s["failed"], 0)
         self.assertEqual(s["id"], job.id)
 
+    @httpretty.activate
     def test_streams(self):
-        job = crp.Job()
-        job.create("function Run(d) { return d; }")
+        job = crp.Job("function Run(d) { return d; }")
+
+        return
 
         def get_results():
             left = N
@@ -63,28 +95,26 @@ class Tests(unittest.TestCase):
 
         t.join()
 
+    @httpretty.activate
     def test_io(self):
-        job = crp.Job()
-        job.create("function Run(d) { return d*2; }")
+        job = crp.Job(program_fixture)
 
         tasks = range(N)
 
-        io = job.io(tasks)
-        for result in io:
+        for result in job(tasks):
             self.assertIn(result/2, tasks)
 
+    @httpretty.activate
     def test_pipe(self):
-        multiply = crp.Job()
-        multiply.create("function Run(d) { return d*2; }")
-
-        divide = crp.Job()
-        divide.create("function Run(d) { return d/2; }")
+        multiply = crp.Job(program_fixture)
+        divide = crp.Job("function Run(d) { return d/2; }")
 
         tasks = range(N)
-        multiplied = multiply.io(tasks)
-        divided = divide.io(multiplied)
+        multiplied = multiply(tasks)
+        divided = divide(multiplied)
         for result in divided:
-            self.assertIn(result, tasks)
+            print(result)
+            #self.assertIn(result, tasks)
 
 if __name__ == '__main__':
     unittest.main()
