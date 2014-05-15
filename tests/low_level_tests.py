@@ -1,12 +1,12 @@
-import crowdprocess
+from crowdprocess import CrowdProcess
 import unittest
 from time import sleep
 import threading
 import json
 import httpretty
 
-crp = crowdprocess.CrowdProcess(
-    username="jj@crowdprocess.com", password="blablabla")
+crp = CrowdProcess('username', 'password')
+
 N = 10
 program_fixture = "function Run(d) { return d*2; }"
 results_fixture = "\n".join([str(x*2) for x in range(N)])+"\n"
@@ -15,7 +15,8 @@ baseAPIUrl = "https://api.crowdprocess.com/jobs/"
 
 class Tests(unittest.TestCase):
 
-    def setUp(self):
+    @httpretty.activate
+    def test_low_level(self):
         httpretty.register_uri(httpretty.POST, baseAPIUrl,
                       body=json.dumps({
                         "id": "job_id"
@@ -40,12 +41,10 @@ class Tests(unittest.TestCase):
         httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
                       status=200,
                       body=results_fixture,
-                      stream=True,
+                      streaming=True,
                       content_type='application/json')
 
-    @httpretty.activate
-    def test_low_level(self):
-        job = crp.Job(program_fixture)
+        job = crp.job(program_fixture)
         self.assertIsNotNone(job.id)
 
         tasks = range(N)
@@ -64,7 +63,7 @@ class Tests(unittest.TestCase):
 
         self.assertEqual(results_got, N)
 
-        job = crp.Job(id=job.id)
+        job = crp.job(id=job.id)
         s = job.show()
         self.assertEqual(s["total"], N)
         self.assertEqual(s["finished"], N)
@@ -73,12 +72,32 @@ class Tests(unittest.TestCase):
 
     @httpretty.activate
     def test_streams(self):
-        job = crp.Job("function Run(d) { return d; }")
+        httpretty.register_uri(httpretty.POST, baseAPIUrl,
+                      body=json.dumps({
+                        "id": "job_id"
+                      }),
+                      status=201,
+                      content_type='application/json')
 
-        return
+        httpretty.register_uri(httpretty.POST, baseAPIUrl+"job_id/tasks",
+                      status=201,
+                      content_type='application/json')
+
+        httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
+                      status=200,
+                      body=results_fixture,
+                      streaming=True,
+                      content_type='application/json')
+
+        job = crp.job("function Run(d) { return d; }")
 
         def get_results():
             left = N
+            httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
+                          status=200,
+                          body=results_fixture,
+                          streaming=True,
+                          content_type='application/json')
             for result in job.get_results_stream():
                 left = left - 1
                 if left is 0:
@@ -94,27 +113,6 @@ class Tests(unittest.TestCase):
         job.create_tasks(tasks())
 
         t.join()
-
-    @httpretty.activate
-    def test_io(self):
-        job = crp.Job(program_fixture)
-
-        tasks = range(N)
-
-        for result in job(tasks):
-            self.assertIn(result/2, tasks)
-
-    @httpretty.activate
-    def test_pipe(self):
-        multiply = crp.Job(program_fixture)
-        divide = crp.Job("function Run(d) { return d/2; }")
-
-        tasks = range(N)
-        multiplied = multiply(tasks)
-        divided = divide(multiplied)
-        for result in divided:
-            print(result)
-            #self.assertIn(result, tasks)
 
 if __name__ == '__main__':
     unittest.main()
