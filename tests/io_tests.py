@@ -25,7 +25,7 @@ class Tests(unittest.TestCase):
                       status=201,
                       content_type='application/json')
 
-        job = crpself._headers(program_fixture)
+        job = crp.job(program_fixture)
 
         tasks = range(N)
 

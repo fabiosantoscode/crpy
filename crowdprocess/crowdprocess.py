@@ -40,7 +40,7 @@ class Job(object):
     def __init__(self, CrowdProcess, program=None,
                  bid=1.0, group=None, id=None):
         super(Job, self).__init__()
-        self._headers = CrowdProcess.headers
+        self._headers = CrowdProcess._headers
         self._batch_out = {}
 
         if id is not None:
