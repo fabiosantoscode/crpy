@@ -3,3 +3,8 @@ test:
 
 dist:
 	python setup.py sdist upload	
+
+clean:
+	rm -rf build dist
+
+.PHONY: dist
