@@ -31,6 +31,13 @@ class CrowdProcess(object):
         else:
             res.raise_for_status()
 
+    def delete_jobs(self):
+        res = requests.delete(baseAPIUrl,
+                              headers=self._headers)
+
+        if res.status_code != requests.codes.no_content:
+            res.raise_for_status()
+
     def job(self, program=None, bid=1.0, group=None, id=None):
         return Job(self, program=program, bid=bid, group=group, id=id)
 
@@ -47,6 +54,8 @@ class Job(object):
             self.id = id
         elif program is not None:
             self._create(program, bid, group)
+        else:
+            raise Exception("needs either a program or a job id as arguments")
 
     def _create(self, program, bid=1.0, group=None):
         payload = {
@@ -74,7 +83,7 @@ class Job(object):
         return res.json()
 
     def delete(self):
-        res = requests.delete(baseAPIUrl + "/" + self.id,
+        res = requests.delete(baseAPIUrl + self.id,
                               headers=self._headers)
 
         if res.status_code != requests.codes.no_content:
