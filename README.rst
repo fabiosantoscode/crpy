@@ -91,7 +91,7 @@ Prettier:
 .. code:: python
 
     >>> jobs = crp.list_jobs()
-    >>> print json.dumps(jobs, sort_keys=True, indent=2)
+    >>> print(json.dumps(jobs, sort_keys=True, indent=2))
     [
       {
         "bid": 1, 
@@ -227,7 +227,7 @@ before sending tasks, probably a separate thread:
     >>> def get_results():
     ...     expected_results = 10
     ...     for result in job.get_results_stream():
-    ...             print result
+    ...             print(result)
     ...             expected_results -= 1
     ...             if expected_results == 0:
     ...                 break
@@ -273,7 +273,7 @@ Sometimes your tasks throw uncaught exceptions, and you should get them:
     [1, 6, 9, 8, 5, 7, 2, 3, 0] # oh no, 4 is missing...
     >>> list(job.get_errors())
     [{u'message': u"oops, it's 4", u'type': u'program', u'name': u'Error', u'stack': u'Run@blob:9a4029f7-fff7-4da8-b552-92507e341749:5\n[2]</</self.onmessage@blob:9a4029f7-fff7-4da8-b552-92507e341749:9\n'}]
-    >>> print json.dumps(list(job.get_errors()), sort_keys=True, indent=2) # prettier
+    >>> print(json.dumps(list(job.get_errors()), sort_keys=True, indent=2)) # prettier
     [
       {
         "message": "oops, it's 4", 
