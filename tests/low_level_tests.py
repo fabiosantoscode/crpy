@@ -41,7 +41,6 @@ class Tests(unittest.TestCase):
         httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
                       status=200,
                       body=results_fixture,
-                      streaming=True,
                       content_type='application/json')
 
         job = crp.job(program_fixture)
@@ -86,7 +85,6 @@ class Tests(unittest.TestCase):
         httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
                       status=200,
                       body=results_fixture,
-                      streaming=True,
                       content_type='application/json')
 
         job = crp.job("function Run(d) { return d; }")
@@ -95,8 +93,7 @@ class Tests(unittest.TestCase):
             left = N
             httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
                           status=200,
-                          body=results_fixture,
-                          streaming=True,
+                          body=results_fixture.encode(),
                           content_type='application/json')
             for result in job.get_results_stream():
                 left = left - 1

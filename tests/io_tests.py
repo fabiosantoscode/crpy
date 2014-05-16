@@ -32,7 +32,6 @@ class Tests(unittest.TestCase):
         httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id/results",
                       status=200,
                       body=results_fixture,
-                      streaming=True,
                       content_type='application/json')
 
         httpretty.register_uri(httpretty.POST, baseAPIUrl+"job_id/tasks",
