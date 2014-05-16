@@ -27,7 +27,7 @@ Usage example
     >>> from crowdprocess import CrowdProcess
     >>> crp = CrowdProcess('username', 'password')
 
-    >>> x2 = crp.job('function Run (d) { return d*;2r }')
+    >>> x2 = crp.job('function Run (d) { return d*2; }')
     >>> results = x2(range(5))
     >>> list(results)
     [0, 2, 4, 6, 8, 10] # comes in a random order
