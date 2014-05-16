@@ -120,7 +120,7 @@ Deleting all jobs
 
 .. code:: python
 
-    >>> crp.list_jobs()
+    >>> crp.delete_jobs()
 
 Tasks and Results
 -----------------

@@ -99,7 +99,7 @@ Prettier:
 #### Deleting all jobs
 
 ```python
->>> crp.list_jobs()
+>>> crp.delete_jobs()
 ```
 
 ## Tasks and Results
