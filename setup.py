@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='CrowdProcess',
-    version='0.1.3',
+    version='0.1.4',
     packages=['crowdprocess'],
     license='MIT',
     maintainer='João Jerónimo',
