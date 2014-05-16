@@ -112,8 +112,9 @@ class Job(object):
         def gen(iter):
             while True:
                 line = res.raw.readline()
-                if len(line) is 0:
+                if len(line) == 0:
                     break
+
                 yield json.loads(line.decode())
 
         return gen(res)
@@ -129,7 +130,7 @@ class Job(object):
         def gen(iter):
             while True:
                 line = res.raw.readline()
-                if len(line) is 0:
+                if len(line) == 0:
                     break
                 yield json.loads(line.decode())
 
