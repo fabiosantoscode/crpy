@@ -1,1 +1,1 @@
-from crowdprocess import CrowdProcess
+from .crowdprocess import CrowdProcess
