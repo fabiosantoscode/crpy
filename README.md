@@ -152,13 +152,13 @@ Notice that the results never come in order.
 
 ## Tasks and Results, lower level
 
-### Creating tasks
+### Submitting tasks
 
 Once again, tasks may be any iterable:
 
 ```python
 >>> multiply = crp.job('function Run (d) { return d*2 }')
->>> multiply.create_tasks(range(10))
+>>> multiply.submit_tasks(range(10))
 ```
 
 ### Getting results
@@ -173,23 +173,19 @@ This delivers all the job's computed results at the moment, but you should in fa
 
 ### Streaming results
 
-```python
->>> results = multiply.get_results_stream()
->>> list(results)
-[18, 8, 10, 4, 6, 16, 14, 0, 2, 12]
-```
-
-In the code block above, `list(results)` will block until all results are computed and delivered.
-
 You can also iterate through every result as soon as it comes in:
 
 ```python
+>>> expected_results = 10
 >>> results = multiply.get_results_stream()
 >>> for result in results:
 ...     print(result)
+...		expected_results -= 1
+...		if expected_results == 0:
+...			break
 ```
 
-And that loop will finish when the last result is delivered.
+The stream does not know if or when a result might be computed and delivered, so you must count how many results you still expect to break the loop.
 
 To use this properly you should start listening for streaming results before sending tasks, probably a separate thread:
 
@@ -197,12 +193,16 @@ To use this properly you should start listening for streaming results before sen
 >>> import threading
 >>> job = crp.job("function Run(d) { return d; }")
 >>> def get_results():
+...		expected_results = 10
 ...     for result in job.get_results_stream():
 ...             print result
+...				expected_results -= 1
+...				if expected_results == 0:
+...					break
 ... 
 >>> t = threading.Thread(target=get_results)
 >>> t.start()
->>> job.create_tasks(range(10))
+>>> job.submit_tasks(range(10))
 >>> 7
 9
 6
@@ -213,7 +213,10 @@ To use this properly you should start listening for streaming results before sen
 4
 0
 5
+>>> t.join()
 ```
+
+Sometimes your tasks will have uncaught exceptions and those will cause a result to not be delivered, so you must account for those as well to decrease your expected_results counter.
 
 ### Errors and streaming errors
 
@@ -230,7 +233,7 @@ Sometimes your tasks throw uncaught exceptions, and you should get them:
 ... }
 ... """
 >>> job = crp.job(program)
->>> job.create_tasks(range(10))
+>>> job.submit_tasks(range(10))
 >>> list(job.get_results())
 [1, 6, 9, 8, 5, 7, 2, 3, 0] # oh no, 4 is missing...
 >>> list(job.get_errors())

@@ -47,7 +47,7 @@ class Tests(unittest.TestCase):
         self.assertIsNotNone(job.id)
 
         tasks = range(N)
-        job.create_tasks(tasks)
+        job.submit_tasks(tasks)
 
         while True:
             s = job.show()
@@ -107,7 +107,7 @@ class Tests(unittest.TestCase):
             for x in range(N):
                 yield x
 
-        job.create_tasks(tasks())
+        job.submit_tasks(tasks())
 
         t.join()
 

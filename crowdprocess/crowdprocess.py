@@ -89,7 +89,7 @@ class Job(object):
         if res.status_code != requests.codes.no_content:
             res.raise_for_status()
 
-    def create_tasks(self, iterable):
+    def submit_tasks(self, iterable):
         def genwrapper():
             for n in iterable:
                 yield json.dumps(n).encode() + b"\n"
@@ -179,7 +179,7 @@ class Job(object):
                 yield n
                 self._batch_out[batch] += 1
 
-        t = threading.Thread(target=self.create_tasks, args=(genwrapper(),))
+        t = threading.Thread(target=self.submit_tasks, args=(genwrapper(),))
 
         results = self.get_results_stream()
         t.start()
