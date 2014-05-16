@@ -4,6 +4,8 @@ CrowdProcess API Client for Python
 This is a client for `CrowdProcess <https://crowdprocess.com/>`__'s
 `REST API <https://crowdprocess.com/rest>`__.
 
+It works in python 2.7 and 3.4+.
+
 Installing
 ----------
 

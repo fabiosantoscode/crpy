@@ -2,6 +2,8 @@
 
 This is a client for [CrowdProcess](https://crowdprocess.com/)'s [REST API](https://crowdprocess.com/rest).
 
+It works in python 2.7 and 3.4+.
+
 ## Installing
 
 	pip install crowdprocess
