@@ -1,8 +1,15 @@
 import requests
 import json
 from base64 import b64encode
-import threading
+from collections import namedtuple
+from threading import Thread
 from time import time
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
+import select
+import socket
 
 baseAPIUrl = "https://api.crowdprocess.com/jobs/"
 
@@ -174,25 +181,93 @@ class Job(object):
         batch = str(time())
         self._batch_out[batch] = 0
 
+        # input
         def genwrapper():
             for n in iterable:
                 yield n
                 self._batch_out[batch] += 1
 
-        t = threading.Thread(target=self.submit_tasks, args=(genwrapper(),))
+        results_req = requests.get(baseAPIUrl + self.id + "/results?stream",
+                                   stream=True,
+                                   headers=self._headers)
 
-        results = self.get_results_stream()
-        t.start()
+        errors_req = requests.get(baseAPIUrl + self.id + "/errors?stream",
+                                  stream=True,
+                                  headers=self._headers)
+
+        if results_req.status_code != requests.codes.ok:
+            results_req.raise_for_status()
+
+        if errors_req.status_code != requests.codes.ok:
+            errors_req.raise_for_status()
+
+        results_raw_req = results_req.raw
+        errors_raw_req = errors_req.raw
+        inputs = [results_raw_req, errors_raw_req]
+
+        results_queue = Queue()
+        errors_queue = Queue()
+
+        def get_results_and_errors():
+            while True:
+                if results_raw_req.closed or errors_raw_req.closed:
+                    print results_raw_req.closed, errors_raw_req.closed
+                try:
+                    inputready, _,_ = select.select(inputs, [], [])
+                except select.error, e:
+                    break
+                except socket.error, e:
+                    break
+                except AttributeError:
+                    if results_raw_req.closed:
+                        if results_raw_req in inputs:
+                            inputs.remove(results_raw_req)
+                    if errors_raw_req.closed:
+                        if errors_raw_req in inputs:
+                            inputs.remove(errors_raw_req)
+                    if len(inputs) == 0:
+                        raise Exception("results and errors connections were closed unexpectedly")
+
+                for s in inputready:
+                    if s == results_raw_req:
+                        line = results_raw_req.readline()
+                        if len(line) == 0:
+                            continue
+                        self._batch_out[batch] -= 1
+                        results_queue.put({
+                            "result": json.loads(line.decode())
+                        })
+                    
+                    if s == errors_raw_req:
+                        line = errors_raw_req.readline()
+                        if len(line) == 0:
+                            continue
+                        self._batch_out[batch] -= 1
+                        errors_queue.put({
+                            "error": json.loads(line.decode())
+                        })
+                
+        results_and_errors = Thread(target=get_results_and_errors)
+        results_and_errors.start()
+
+        tasks = Thread(target=self.submit_tasks, args=(genwrapper(),))
+        tasks.start()
+
 
         def results_gen():
-            for result in results:
-                yield result
-                self._batch_out[batch] -= 1
-                while self._batch_out[batch] == 0 and t.isAlive():
-                    t.join(0.1)
-
-                if self._batch_out[batch] == 0 and not t.isAlive():
+            while True:
+                if self._batch_out[batch] == 0:
                     break
-            t.join()
+                yield results_queue.get()
+                results_queue.task_done()
 
-        return results_gen()
+        def errors_gen():
+            while True:
+                if self._batch_out[batch] == 0:
+                    break
+                yield errors_queue.get()
+                errors_queue.task_done()
+
+        Data = namedtuple('Data', 'results, errors')
+
+        return Data(results_gen(), errors_gen())
