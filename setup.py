@@ -13,5 +13,9 @@ setup(
     long_description=open('README.rst').read(),
     install_requires=[
         "requests"
-    ]
+    ],
+    tests_require=[
+        "httpretty"
+    ],
+    test_suite="tests"
 )
