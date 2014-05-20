@@ -181,7 +181,6 @@ class Job(object):
         batch = str(time())
         self._batch_out[batch] = 0
 
-        # input
         def genwrapper():
             for n in iterable:
                 yield n
@@ -210,12 +209,10 @@ class Job(object):
 
         def get_results_and_errors():
             while True:
-                if results_raw_req.closed or errors_raw_req.closed:
-                    print results_raw_req.closed, errors_raw_req.closed
                 try:
                     inputready, _,_ = select.select(inputs, [], [])
                 except select.error, e:
-                    break
+                  break
                 except socket.error, e:
                     break
                 except AttributeError:
@@ -234,37 +231,32 @@ class Job(object):
                         if len(line) == 0:
                             continue
                         self._batch_out[batch] -= 1
-                        results_queue.put({
-                            "result": json.loads(line.decode())
-                        })
+                        results_queue.put(json.loads(line.decode()))
                     
                     if s == errors_raw_req:
                         line = errors_raw_req.readline()
                         if len(line) == 0:
                             continue
                         self._batch_out[batch] -= 1
-                        errors_queue.put({
-                            "error": json.loads(line.decode())
-                        })
-                
+                        errors_queue.put(json.loads(line.decode()))
+               
+
         results_and_errors = Thread(target=get_results_and_errors)
+        results_and_errors.daemon = True
         results_and_errors.start()
 
         tasks = Thread(target=self.submit_tasks, args=(genwrapper(),))
+        tasks.daemon = True
         tasks.start()
 
 
         def results_gen():
-            while True:
-                if self._batch_out[batch] == 0:
-                    break
+            while not results_queue.empty() or self._batch_out[batch] > 0:
                 yield results_queue.get()
                 results_queue.task_done()
 
         def errors_gen():
-            while True:
-                if self._batch_out[batch] == 0:
-                    break
+            while not errors_queue.empty() or self._batch_out[batch] > 0:
                 yield errors_queue.get()
                 errors_queue.task_done()
 
