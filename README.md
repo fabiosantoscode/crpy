@@ -19,7 +19,7 @@ or
 >>> crp = CrowdProcess('username', 'password')
 
 >>> x2 = crp.job('function Run (d) { return d*2; }')
->>> results = x2(range(5))
+>>> results = x2(range(5)).results
 >>> list(results)
 [0, 2, 4, 6, 8, 10] # comes in a random order
 ```
@@ -111,7 +111,7 @@ After creating a job, you're all set to send it tasks and get back results.
 ```python
 >>> job = crp.job('function Run (d) { return Math.pow(d, 2); }')
 >>> tasks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
->>> results = job(tasks)
+>>> results = job(tasks).results
 >>> list(results)
 [49, 64, 16, 25, 9, 36, 4, 81, 0, 1]
 ```
@@ -132,7 +132,7 @@ which would also be the same as,
 ...     for i in range(10):
 ...             yield i
 ... 
->>> list(job(tasks))
+>>> list(job(tasks).results)
 [25, 64, 49, 16, 36, 9, 0, 81, 1, 4]
 ```
 
@@ -144,8 +144,8 @@ Notice that the results never come in order.
 >>> multiply = crp.job('function Run (d) { return d*2 }')
 >>> divide = crp.job('function Run (d) { return d/2 }')
 >>> numbers = range(10)
->>> multiplied = multiply(numbers)
->>> divided = divide(multiplied)
+>>> multiplied = multiply(numbers).results
+>>> divided = divide(multiplied).results
 >>> list(divided)
 [7, 2, 6, 1, 5, 9, 8, 4, 3, 0]
 ```
