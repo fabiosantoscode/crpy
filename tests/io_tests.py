@@ -7,7 +7,7 @@ import httpretty
 
 crp = CrowdProcess('username', 'password')
 
-N = 10000
+N = 10
 program_fixture = "function Run(d) { if (d % 17 === 0) { throw 'oh no it is '+d; } return d; }"
 results_fixture = "\n".join([str(x*2) for x in range(N)])+"\n"
 divide_results_fixture = "\n".join([str(x) for x in range(N)])+"\n"
@@ -18,9 +18,17 @@ errors_fixture = json.dumps({"stack": "oops it's 4"})+ "\n"
 
 baseAPIUrl = "https://api.crowdprocess.com/jobs/"
 
+import select
+
+def select_mock (rlist, wlist, xlist, timeout=0):
+  inputready = [r for r in rlist if r.closed is not True]
+  return inputready, [], []
+
+select.select = select_mock
+
 class Tests(unittest.TestCase):
 
-    #@httpretty.activate
+    @httpretty.activate
     def test_io(self):
         httpretty.register_uri(httpretty.POST, baseAPIUrl,
                       body=json.dumps({
@@ -48,10 +56,9 @@ class Tests(unittest.TestCase):
 
         results = job(tasks).results
         for result in results:
-            if data.get('result'):
-                self.assertIn(data['result'], tasks)
+            self.assertIn(result/2, tasks)
 
-    #@httpretty.activate
+    @httpretty.activate
     def test_pipe(self):
         httpretty.register_uri(httpretty.POST, baseAPIUrl,
                       body=json.dumps({
@@ -82,7 +89,7 @@ class Tests(unittest.TestCase):
                       body=results_fixture,
                       content_type='application/json')
 
-        httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id2/errors",
+        httpretty.register_uri(httpretty.GET, baseAPIUrl+"job_id1/errors",
                       status=200,
                       body="",
                       content_type='application/json')
@@ -105,9 +112,8 @@ class Tests(unittest.TestCase):
 
         divided = divide(multiplied).results
 
-        for data in divided:
-            if data.get('result'):
-                self.assertIn(data['result'], tasks)
+        for result in divided:
+            self.assertIn(result, tasks)
 
 if __name__ == '__main__':
     unittest.main()
