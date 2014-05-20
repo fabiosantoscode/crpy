@@ -120,7 +120,7 @@ which would be the same as,
 
 ```python
 >>> job = crp.job('function Run (d) { return Math.pow(d, 2); }')
->>> list(job(range(10)))
+>>> list(job(range(10)).results)
 [49, 64, 16, 25, 9, 36, 4, 81, 0, 1]
 ```
 
@@ -148,6 +148,18 @@ Notice that the results never come in order.
 >>> divided = divide(multiplied).results
 >>> list(divided)
 [7, 2, 6, 1, 5, 9, 8, 4, 3, 0]
+```
+
+### Don't forget about the errors
+
+Sometimes your tasks will throw uncaught exceptions that you should know about, and you can get them the same way you get results:
+
+```python
+>>> job = crp.job('function Run (d) { if (d === 4) { throw new Error("oh no, "+d) } return d; }')
+>>> tasks = range(10)
+>>> errors = job(tasks).errors
+>>> for error in errors:
+...     print error
 ```
 
 ## Tasks and Results, lower level
