@@ -211,7 +211,7 @@ class Job(object):
             while True:
                 inputready = []
                 try:
-                    inputready, _,_ = select.select(inputs, [], [])
+                    inputready, _,_ = select.select(inputs, [], [], 0.001)
                 except select.error:
                     break
                 except socket.error:
@@ -241,7 +241,7 @@ class Job(object):
                         errors_queue.put(json.loads(line.decode()))
                         self._batch_out[batch] -= 1
 
-                if self._batch_out[batch] == 0:
+                if not tasks.is_alive() and self._batch_out[batch] == 0:
                     break
 
 
@@ -254,7 +254,7 @@ class Job(object):
         tasks.start()
 
         def results_gen():
-            while tasks.is_alive() or not results_queue.empty() or self._batch_out[batch] > 0:
+            while results_and_errors.is_alive() or not results_queue.empty():
                 try:
                     yield results_queue.get(True, 0.001)
                 except queue.Empty:
@@ -262,7 +262,7 @@ class Job(object):
                 results_queue.task_done()
 
         def errors_gen():
-            while tasks.is_alive() or not errors_queue.empty() or self._batch_out[batch] > 0:
+            while results_and_errors.is_alive() or not errors_queue.empty():
                 try:
                     yield errors_queue.get(True, 0.001)
                 except queue.Empty:
