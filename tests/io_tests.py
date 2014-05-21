@@ -21,8 +21,8 @@ baseAPIUrl = "https://api.crowdprocess.com/jobs/"
 import select
 
 def select_mock (rlist, wlist, xlist, timeout=0):
-  inputready = [r for r in rlist if r.closed is not True]
-  return inputready, [], []
+    inputready = [r for r in rlist if r.closed is not True]
+    return inputready, [], []
 
 select.select = select_mock
 
@@ -66,7 +66,7 @@ class Tests(unittest.TestCase):
                       }),
                       status=201,
                       content_type='application/json')
-        
+
         multiply = crp.job(program_fixture)
 
         httpretty.register_uri(httpretty.POST, baseAPIUrl,
@@ -76,7 +76,7 @@ class Tests(unittest.TestCase):
                       status=201,
                       content_type='application/json')
 
-        divide = crp.job("function Run(d) { return d/2; }")
+        divide = crp.job("function Run(d) { return d; }")
 
         tasks = range(N)
 
