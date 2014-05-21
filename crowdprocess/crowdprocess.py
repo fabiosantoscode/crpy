@@ -207,6 +207,10 @@ class Job(object):
         results_queue = queue.Queue()
         errors_queue = queue.Queue()
 
+        tasks = Thread(target=self.submit_tasks, args=(genwrapper(),))
+        tasks.daemon = True
+        tasks.start()
+
         def get_results_and_errors():
             while True:
                 inputready = []
@@ -248,10 +252,6 @@ class Job(object):
         results_and_errors = Thread(target=get_results_and_errors)
         results_and_errors.daemon = True
         results_and_errors.start()
-
-        tasks = Thread(target=self.submit_tasks, args=(genwrapper(),))
-        tasks.daemon = True
-        tasks.start()
 
         def results_gen():
             while results_and_errors.is_alive() or not results_queue.empty():
