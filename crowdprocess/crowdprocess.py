@@ -5,9 +5,9 @@ from collections import namedtuple
 from threading import Thread
 from time import time
 try:
-    from queue import Queue
+    import queue
 except ImportError:
-    from Queue import Queue
+    import Queue as queue
 import select
 import socket
 
@@ -204,8 +204,8 @@ class Job(object):
         errors_raw_req = errors_req.raw
         inputs = [results_raw_req, errors_raw_req]
 
-        results_queue = Queue()
-        errors_queue = Queue()
+        results_queue = queue.Queue()
+        errors_queue = queue.Queue()
 
         def get_results_and_errors():
             while True:
@@ -253,15 +253,20 @@ class Job(object):
         tasks.daemon = True
         tasks.start()
 
-
         def results_gen():
-            while not results_queue.empty() or self._batch_out[batch] > 0:
-                yield results_queue.get()
+            while tasks.is_alive() or not results_queue.empty() or self._batch_out[batch] > 0:
+                try:
+                    yield results_queue.get(True, 0.001)
+                except queue.Empty:
+                    continue
                 results_queue.task_done()
 
         def errors_gen():
-            while not errors_queue.empty() or self._batch_out[batch] > 0:
-                yield errors_queue.get()
+            while tasks.is_alive() or not errors_queue.empty() or self._batch_out[batch] > 0:
+                try:
+                    yield errors_queue.get(True, 0.001)
+                except queue.Empty:
+                    continue
                 errors_queue.task_done()
 
         Data = namedtuple('Data', 'results, errors')
