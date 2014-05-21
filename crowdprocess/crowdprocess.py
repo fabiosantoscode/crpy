@@ -209,6 +209,7 @@ class Job(object):
 
         def get_results_and_errors():
             while True:
+                inputready = []
                 try:
                     inputready, _,_ = select.select(inputs, [], [])
                 except select.error:
