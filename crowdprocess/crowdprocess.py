@@ -211,9 +211,9 @@ class Job(object):
             while True:
                 try:
                     inputready, _,_ = select.select(inputs, [], [])
-                except select.error, e:
-                  break
-                except socket.error, e:
+                except select.error:
+                    break
+                except socket.error:
                     break
                 except AttributeError:
                     if results_raw_req.closed:
