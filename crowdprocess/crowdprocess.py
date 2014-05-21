@@ -230,16 +230,19 @@ class Job(object):
                         line = results_raw_req.readline()
                         if len(line) == 0:
                             continue
-                        self._batch_out[batch] -= 1
                         results_queue.put(json.loads(line.decode()))
-                    
+                        self._batch_out[batch] -= 1
+
                     if s == errors_raw_req:
                         line = errors_raw_req.readline()
                         if len(line) == 0:
                             continue
-                        self._batch_out[batch] -= 1
                         errors_queue.put(json.loads(line.decode()))
-               
+                        self._batch_out[batch] -= 1
+
+                if self._batch_out[batch] == 0:
+                    break
+
 
         results_and_errors = Thread(target=get_results_and_errors)
         results_and_errors.daemon = True
